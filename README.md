@@ -4,6 +4,16 @@
 
 ![d09f93a1521608cb9e91a3a0b45761](images/d09f93a1521608cb9e91a3a0b45761.JPG)
 
+## 平台支持
+
+| 平台 | WiFi 检测方式 | 状态 |
+|------|--------------|------|
+| macOS 10.15+ | `system_profiler` + `ifconfig` | 支持 |
+| Linux（桌面/服务器） | `iw`（首选）, `iwconfig`（回退） | 支持 |
+| 嵌入式 Linux（如 RK35xx 系列） | `iw` | 支持 |
+
+## 功能
+
 ## 功能
 
 - **WiFi 状态检测**：当前频段、信道、带宽、信号强度、传输速率
@@ -23,7 +33,10 @@ cd ~/workspace/optimize-network
 chmod +x optimize-network.sh
 ```
 
-依赖：`python3`、`bc`（macOS 自带；Linux 需单独安装）
+依赖：`python3`、`bc`（macOS 自带；Linux 需 `sudo apt install bc`）
+
+Linux 额外依赖：`iw`（WiFi 检测），`iwconfig`（噪声回退）。
+macOS 默认自带 `iw`。
 
 ## 用法
 
@@ -38,6 +51,17 @@ chmod +x optimize-network.sh
 ```bash
 ./optimize-network.sh 192.168.1.20 admin
 ./optimize-network.sh <IP> <用户名>
+```
+
+### 环境变量
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `ROUTER_IP` | `192.168.0.1` | 路由器 ping 目标地址 |
+| `MODEM_IP` | `192.168.1.1` | 宽带猫 ping 目标地址 |
+
+```bash
+ROUTER_IP=192.168.1.1 MODEM_IP=192.168.1.254 ./optimize-network.sh
 ```
 
 ## 工作流程

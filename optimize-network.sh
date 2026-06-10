@@ -26,6 +26,56 @@ NC='\033[0m'
 BOLD='\033[1m'
 
 # ═══════════════════════════════════════════════════════════════
+# 平台检测
+# ═══════════════════════════════════════════════════════════════
+
+detect_platform() {
+    case "$(uname -s)" in
+        Darwin) echo "macos" ;;
+        Linux)  echo "linux" ;;
+        *)      echo "unknown" ;;
+    esac
+}
+PLATFORM=$(detect_platform)
+
+# ═══════════════════════════════════════════════════════════════
+# WiFi 接口检测
+# ═══════════════════════════════════════════════════════════════
+
+detect_wifi_iface() {
+    if [ "$PLATFORM" = "macos" ]; then
+        echo "en0"
+        return
+    fi
+    # Linux: 遍历 /sys/class/net/ 找已连接的无线接口
+    for iface in /sys/class/net/wlan* /sys/class/net/wlx* /sys/class/net/wlp*; do
+        [ -e "$iface" ] || continue
+        local name
+        name=$(basename "$iface")
+        if iw dev "$name" link >/dev/null 2>&1; then
+            echo "$name"
+            return
+        fi
+    done
+    echo ""
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 频率 → 信道转换
+# ═══════════════════════════════════════════════════════════════
+
+freq_to_channel() {
+    local freq="$1"
+    if [ "$freq" -ge 5180 ] 2>/dev/null && [ "$freq" -le 5960 ] 2>/dev/null; then
+        echo $(( (freq - 5180) / 5 + 1 ))
+    elif [ "$freq" -ge 2412 ] 2>/dev/null && [ "$freq" -le 2484 ] 2>/dev/null; then
+        echo $(( (freq - 2412) / 5 + 1 ))
+    else
+        echo ""
+    fi
+}
+
+# ═══════════════════════════════════════════════════════════════
 # 工具函数
 # ═══════════════════════════════════════════════════════════════
 
@@ -123,7 +173,7 @@ trend_arrow() {
 # WiFi 检测 - 只返回数据，不输出
 # ═══════════════════════════════════════════════════════════════
 
-detect_wifi() {
+detect_wifi_macos() {
     local wifi_info=""
     local phy=""
     local channel_raw=""
@@ -134,20 +184,20 @@ detect_wifi() {
     local noise=""
     local tx_rate=""
     local ip=""
-    
+
     # 获取 IP
     ip=$(ifconfig en0 2>/dev/null | grep 'inet ' | awk '{print $2}' || echo "")
-    
+
     # 获取 WiFi 详情
     wifi_info=$(system_profiler SPAirPortDataType 2>/dev/null | grep -A20 "Current Network Information" | head -25 || true)
-    
+
     if [ -n "$wifi_info" ]; then
         phy=$(echo "$wifi_info" | grep 'PHY Mode:' | head -1 | sed 's/.*PHY Mode: *//' | tr -d ' ')
         channel_raw=$(echo "$wifi_info" | grep 'Channel:' | head -1 | sed 's/.*Channel: *//' | tr -d ' ')
         signal=$(echo "$wifi_info" | grep 'Signal / Noise:' | head -1 | sed 's/.*Signal \/ Noise: *//' | awk '{print $1}')
         noise=$(echo "$wifi_info" | grep 'Signal / Noise:' | head -1 | sed 's/.*Signal \/ Noise: *//' | awk '{print $4}')
         tx_rate=$(echo "$wifi_info" | grep 'Transmit Rate:' | head -1 | sed 's/.*Transmit Rate: *//' | tr -d ' ')
-        
+
         # 解析信道和频段
         if [ -n "$channel_raw" ]; then
             if echo "$channel_raw" | grep -q "5GHz"; then
@@ -161,7 +211,7 @@ detect_wifi() {
             channel=$(echo "$channel_raw" | grep -o '^[0-9]*')
         fi
     fi
-    
+
     # 返回结构化数据: key=value 格式，每行一个
     cat <<EOF
 phy=$phy
@@ -173,6 +223,91 @@ noise=$noise
 tx_rate=$tx_rate
 ip=$ip
 EOF
+}
+
+# ═══════════════════════════════════════════════════════════════
+# WiFi 检测 (Linux)
+# ═══════════════════════════════════════════════════════════════
+
+detect_wifi_linux() {
+    local iface
+    iface=$(detect_wifi_iface)
+    if [ -z "$iface" ]; then
+        echo "phy=|channel=|band=|bandwidth=|signal=|noise=|tx_rate=|ip="
+        return
+    fi
+
+    local phy="" channel="" band="" bw="" signal="" noise="" tx_rate="" ip=""
+
+    # 尝试 iw dev <iface> link
+    local link_info
+    link_info=$(iw dev "$iface" link 2>/dev/null || true)
+    if [ -n "$link_info" ]; then
+        # 信号强度
+        signal=$(echo "$link_info" | grep 'signal:' | awk '{print $2}')
+        # 速率（rxbitrate）
+        tx_rate=$(echo "$link_info" | grep 'rxbitrate:' | awk '{print $2}')
+        # 频率 → 信道
+        local freq
+        freq=$(echo "$link_info" | grep 'freq:' | awk '{print $2}')
+        if [ -n "$freq" ]; then
+            channel=$(freq_to_channel "$freq")
+            if [ -n "$channel" ]; then
+                if [ "$channel" -ge 36 ] 2>/dev/null; then
+                    band="5GHz"
+                else
+                    band="2GHz"
+                fi
+            fi
+        fi
+    fi
+
+    # 尝试 iw dev <iface> info 获取信道、带宽、PHY
+    local dev_info
+    dev_info=$(iw dev "$iface" info 2>/dev/null || true)
+    if [ -n "$dev_info" ]; then
+        # 信道: "channel 44 (5220 MHz)"
+        if [ -z "$channel" ]; then
+            channel=$(echo "$dev_info" | grep 'channel' | grep -o '[0-9]*' | head -1)
+        fi
+        # 带宽: "width: 40 MHz"
+        if [ -z "$band" ]; then
+            local ch_from_info
+            ch_from_info=$(echo "$dev_info" | grep 'channel' | grep -o '[0-9]*' | head -1)
+            if [ -n "$ch_from_info" ]; then
+                if [ "$ch_from_info" -ge 36 ] 2>/dev/null; then
+                    band="5GHz"
+                else
+                    band="2GHz"
+                fi
+            fi
+        fi
+        bw=$(echo "$dev_info" | grep 'width:' | grep -o '[0-9]*' | head -1)
+        [ -n "$bw" ] && bw="${bw}MHz"
+        # PHY 模式: 从 txbitrates 中取最高代 (ax > ac > n)
+        phy=$(echo "$dev_info" | grep -E '802\.11[a-z]' | tail -1 | grep -o '[0-9]*\.[0-9]*[a-z]' | head -1)
+    fi
+
+    # IP 地址
+    ip=$(ip -4 addr show "$iface" 2>/dev/null | grep 'inet ' | awk '{print $2}' | cut -d/ -f1 || true)
+
+    # 噪声（iw 不直接提供，尝试 iwconfig）
+    noise=$(iwconfig "$iface" 2>/dev/null | grep 'Noise level:' | awk '{print $4}' || echo "")
+    [ -z "$noise" ] && noise="-100"
+
+    echo "phy=${phy:-}|channel=${channel:-}|band=${band:-}|bandwidth=${bw:-}|signal=${signal:-}|noise=${noise:-}|tx_rate=${tx_rate:-}|ip=${ip:-}"
+}
+
+# ═══════════════════════════════════════════════════════════════
+# WiFi 检测 - 平台分发
+# ═══════════════════════════════════════════════════════════════
+
+detect_wifi() {
+    case "$PLATFORM" in
+        macos) detect_wifi_macos ;;
+        linux) detect_wifi_linux ;;
+        *)     echo "phy=|channel=|band=|bandwidth=|signal=|noise=|tx_rate=|ip=" ;;
+    esac
 }
 
 # ═══════════════════════════════════════════════════════════════
@@ -495,7 +630,7 @@ generate_advice() {
     if [ ${#issues[@]} -gt 0 ]; then
         echo ""
         echo -e "${BOLD}路由器操作路径（通用）:${NC}"
-        echo "  1. 浏览器访问路由器管理地址（通常为 http://192.168.0.1 或 http://192.168.1.1）"
+        echo "  1. 浏览器访问路由器管理地址（通常为 http://${ROUTER_IP} 或 http://${MODEM_IP}）"
         echo "  2. 登录后进入「无线设置」→「5G 无线设置」"
         echo "  3. 修改信道和频道带宽，保存重启"
     fi
@@ -813,22 +948,26 @@ main() {
     fi
     
     mkdir -p "$DATA_DIR"
-    
+
+    # 可配置的 ping 目标
+    ROUTER_IP="${ROUTER_IP:-192.168.0.1}"
+    MODEM_IP="${MODEM_IP:-192.168.1.1}"
+
     # 1. WiFi 检测
     print_header "📡 WiFi 状态"
     local wifi_result
     wifi_result=$(detect_wifi)
     print_wifi_status "$wifi_result"
-    
+
     # 2. Ping 测试
     print_header "📶 网络质量测试"
     local router_ping
-    router_ping=$(run_ping_test "192.168.0.1")
-    print_ping_result "笔记本 → 路由器 (192.168.0.1)" "$router_ping"
-    
+    router_ping=$(run_ping_test "$ROUTER_IP")
+    print_ping_result "笔记本 → 路由器 (${ROUTER_IP})" "$router_ping"
+
     local modem_ping
-    modem_ping=$(run_ping_test "192.168.1.1")
-    print_ping_result "笔记本 → 宽带猫 (192.168.1.1)" "$modem_ping"
+    modem_ping=$(run_ping_test "$MODEM_IP")
+    print_ping_result "笔记本 → 宽带猫 (${MODEM_IP})" "$modem_ping"
     
     local server_ping
     server_ping=$(run_ping_test "$SSH_TARGET")
