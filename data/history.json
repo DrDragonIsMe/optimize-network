@@ -1,0 +1,188 @@
+[
+  {
+    "timestamp": "2026-06-11 01:14:35",
+    "wifi": {
+      "phy": "802.11ac",
+      "channel": "44",
+      "band": "5GHz",
+      "bandwidth": "40MHz",
+      "signal_dbm": "-61",
+      "noise_dbm": "-96",
+      "tx_rate_mbps": "240",
+      "ip": "192.168.0.5"
+    },
+    "ping": {
+      "router": {
+        "loss_pct": "0.0",
+        "avg_ms": "40.222"
+      },
+      "modem": {
+        "loss_pct": "0.0",
+        "avg_ms": "12.314"
+      },
+      "server": {
+        "loss_pct": "0.0",
+        "avg_ms": "19.739"
+      }
+    },
+    "ssh": {
+      "first_connect": "0m0.444s",
+      "xfer_10mb": "0m1.091s"
+    }
+  },
+  {
+    "timestamp": "2026-06-11 01:15:03",
+    "wifi": {
+      "phy": "802.11ac",
+      "channel": "44",
+      "band": "5GHz",
+      "bandwidth": "40MHz",
+      "signal_dbm": "-64",
+      "noise_dbm": "-96",
+      "tx_rate_mbps": "324",
+      "ip": "192.168.0.5"
+    },
+    "ping": {
+      "router": {
+        "loss_pct": "0.0",
+        "avg_ms": "13.512"
+      },
+      "modem": {
+        "loss_pct": "0.0",
+        "avg_ms": "13.398"
+      },
+      "server": {
+        "loss_pct": "0.0",
+        "avg_ms": "25.492"
+      }
+    },
+    "ssh": {
+      "first_connect": "0m0.274s",
+      "xfer_10mb": "0m1.094s"
+    }
+  },
+  {
+    "timestamp": "2026-06-11 01:16:30",
+    "wifi": {
+      "phy": "802.11ac",
+      "channel": "44",
+      "band": "5GHz",
+      "bandwidth": "40MHz",
+      "signal_dbm": "-61",
+      "noise_dbm": "-96",
+      "tx_rate_mbps": "360",
+      "ip": "192.168.0.5"
+    },
+    "ping": {
+      "router": {
+        "loss_pct": "0.0",
+        "avg_ms": "10.794"
+      },
+      "modem": {
+        "loss_pct": "0.0",
+        "avg_ms": "15.873"
+      },
+      "server": {
+        "loss_pct": "0.0",
+        "avg_ms": "30.734"
+      }
+    },
+    "ssh": {
+      "first_connect": "0m0.544s",
+      "xfer_10mb": "0m1.080s"
+    }
+  },
+  {
+    "timestamp": "2026-06-11 06:53:58",
+    "wifi": {
+      "phy": "802.11ac",
+      "channel": "44",
+      "band": "5GHz",
+      "bandwidth": "40MHz",
+      "signal_dbm": "-59",
+      "noise_dbm": "-97",
+      "tx_rate_mbps": "270",
+      "ip": "192.168.0.5"
+    },
+    "ping": {
+      "router": {
+        "loss_pct": "0.0",
+        "avg_ms": "10.689"
+      },
+      "modem": {
+        "loss_pct": "0.0",
+        "avg_ms": "10.865"
+      },
+      "server": {
+        "loss_pct": "0.0",
+        "avg_ms": "22.784"
+      }
+    },
+    "ssh": {
+      "first_connect": "466800000s",
+      "xfer_10mb": "1348168000s"
+    }
+  },
+  {
+    "timestamp": "2026-06-11 07:00:23",
+    "wifi": {
+      "phy": "802.11ac",
+      "channel": "44",
+      "band": "5GHz",
+      "bandwidth": "40MHz",
+      "signal_dbm": "-62",
+      "noise_dbm": "-96",
+      "tx_rate_mbps": "400",
+      "ip": "192.168.0.5"
+    },
+    "ping": {
+      "router": {
+        "loss_pct": "0.0",
+        "avg_ms": "31.736"
+      },
+      "modem": {
+        "loss_pct": "0.0",
+        "avg_ms": "14.507"
+      },
+      "server": {
+        "loss_pct": "0.0",
+        "avg_ms": "12.889"
+      }
+    },
+    "ssh": {
+      "first_connect": "0m0.461s",
+      "xfer_10mb": "0m1.066s"
+    }
+  },
+  {
+    "timestamp": "2026-06-11 07:01:40",
+    "wifi": {
+      "phy": "802.11ac",
+      "channel": "44",
+      "band": "5GHz",
+      "bandwidth": "40MHz",
+      "signal_dbm": "-60",
+      "noise_dbm": "-96",
+      "tx_rate_mbps": "300",
+      "ip": "192.168.0.5"
+    },
+    "ping": {
+      "router": {
+        "loss_pct": "0.0",
+        "avg_ms": "13.435"
+      },
+      "modem": {
+        "loss_pct": "0.0",
+        "avg_ms": "41.458"
+      },
+      "server": {
+        "loss_pct": "0.0",
+        "avg_ms": "32.971"
+      }
+    },
+    "ssh": {
+      "first_connect": "0m0.449s",
+      "xfer_10mb": "0m1.151s"
+    }
+  }
+]
