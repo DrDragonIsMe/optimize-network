@@ -1,6 +1,6 @@
 # 🔧 网络优化诊断工具
 
-针对 macOS + TP-LINK 路由器 + SSH 远程服务器的 WiFi 网络优化诊断工具。
+针对 macOS + 任意路由器 + SSH 远程服务器的 WiFi 网络优化诊断工具。
 
 ![d09f93a1521608cb9e91a3a0b45761](images/d09f93a1521608cb9e91a3a0b45761.JPG)
 
@@ -23,7 +23,7 @@ cd ~/workspace/optimize-network
 chmod +x optimize-network.sh
 ```
 
-依赖：`python3`、`bc`（macOS 自带）
+依赖：`python3`、`bc`（macOS 自带；Linux 需单独安装）
 
 ## 用法
 
@@ -53,7 +53,7 @@ chmod +x optimize-network.sh
 💡 诊断分析与优化建议
     1. 发现问题
     2. 给出优化建议
-    3. TP-LINK 路由器操作路径
+    3. 路由器无线设置操作路径
 ℹ️ 结果已保存
 ```
 

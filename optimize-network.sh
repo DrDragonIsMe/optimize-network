@@ -494,8 +494,8 @@ generate_advice() {
     
     if [ ${#issues[@]} -gt 0 ]; then
         echo ""
-        echo -e "${BOLD}TP-LINK 路由器操作路径:${NC}"
-        echo "  1. 浏览器访问 http://tplinkwifi.net 或 http://192.168.0.1"
+        echo -e "${BOLD}路由器操作路径（通用）:${NC}"
+        echo "  1. 浏览器访问路由器管理地址（通常为 http://192.168.0.1 或 http://192.168.1.1）"
         echo "  2. 登录后进入「无线设置」→「5G 无线设置」"
         echo "  3. 修改信道和频道带宽，保存重启"
     fi
@@ -852,7 +852,7 @@ main() {
     
     echo ""
     print_header "测试完成"
-    echo "💡 提示: 修改路由器设置后再次运行此脚本，可看到对比效果"
+    echo "💡 提示: 修改路由器无线设置后再次运行此脚本，可看到对比效果"
 }
 
 main "$@"
