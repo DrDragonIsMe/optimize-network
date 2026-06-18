@@ -18,6 +18,7 @@
 
 - **WiFi 状态检测**：当前频段、信道、带宽、信号强度、传输速率
 - **网络质量测试**：分段 ping 测试（笔记本→路由器→猫→服务器），定位丢包和延迟瓶颈
+- **网络测速**：LAN 下载（路由器）+ WAN 下载（Cloudflare CDN）+ 上传（SSH 远程服务器）
 - **SSH 速度测试**：首次连接时间、10MB 数据传输速度
 - **动态速率分析**：根据 PHY 模式（802.11n/ac/ax）和带宽自动计算理论最大速率，避免误判
 - **健康评分**：1-5 星制网络健康评分，直观展示网络质量
@@ -33,7 +34,7 @@ cd ~/workspace/optimize-network
 chmod +x optimize-network.sh
 ```
 
-依赖：`python3`、`bc`（macOS 自带；Linux 需 `sudo apt install bc`）
+依赖：`python3`、`bc`（macOS 自带；Linux 需 `sudo apt install bc`）、`curl`（macOS 自带；Linux 需 `sudo apt install curl`）
 
 Linux 额外依赖：`iw`（WiFi 检测），`iwconfig`（噪声回退）。
 macOS 默认自带 `iw`。
@@ -59,6 +60,8 @@ macOS 默认自带 `iw`。
 |------|--------|------|
 | `ROUTER_IP` | `192.168.0.1` | 路由器 ping 目标地址 |
 | `MODEM_IP` | `192.168.1.1` | 宽带猫 ping 目标地址 |
+| `LAN_SPEED_URL` | `http://<ROUTER_IP>/` | LAN 测速下载 URL（路由器 HTTP 服务） |
+| `WAN_SPEED_URL` | `https://speed.cloudflare.com/__down?bytes=10485760` | WAN 测速下载 URL（10MB 文件） |
 
 ```bash
 ROUTER_IP=192.168.1.1 MODEM_IP=192.168.1.254 ./optimize-network.sh
@@ -73,6 +76,7 @@ ROUTER_IP=192.168.1.1 MODEM_IP=192.168.1.254 ./optimize-network.sh
 📡 WiFi 状态
 📶 网络质量测试
 🚀 SSH & 传输速度
+⚡ 网络测速
 📊 与上一次的对比（如有历史数据）
 💡 诊断分析与优化建议
     1. 发现问题
@@ -98,6 +102,10 @@ WiFi 信道  153        44         已修改
 到路由器延迟  82.176ms  12.025ms  ↓-70.15 ✅
 到服务器丢包  20.0%     0.0%       ↓-20.00 ✅
 到服务器延迟  82.176ms  12.025ms  ↓-70.15 ✅
+──────────────────────────────────────
+LAN 下载      30.5 MB/s   45.2 MB/s  ↑+14.70
+WAN 下载      55.3 MB/s   88.5 MB/s  ↑+33.20
+上传          8.1 MB/s    12.3 MB/s  ↑+4.20
 
 健康评分: ⭐⭐⭐⭐⭐ 优秀
 
@@ -132,6 +140,11 @@ WiFi 信道  153        44         已修改
     "ssh": {
       "first_connect": "0m0.444s",
       "xfer_10mb": "0m1.091s"
+    },
+    "speed": {
+      "lan_down_mbps": "45.2",
+      "wan_down_mbps": "88.5",
+      "upload_mbps": "12.3"
     }
   }
 ]

@@ -387,6 +387,63 @@ else:
 }
 
 # ═══════════════════════════════════════════════════════════════
+# 网络测速 - LAN 下载 + WAN 下载 + 上传
+# ═══════════════════════════════════════════════════════════════
+
+run_speed_test() {
+    local ssh_opts="-o ConnectTimeout=10 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+
+    # ── LAN 下载测速（到路由器）──
+    local lan_down="N/A"
+    local lan_url="${LAN_SPEED_URL:-http://${ROUTER_IP}/}"
+    if command -v curl &>/dev/null; then
+        local lan_bytes
+        lan_bytes=$(curl -o /dev/null -s -w '%{size_download}' --max-time 30 "$lan_url" 2>/dev/null || echo "0")
+        local lan_time
+        lan_time=$(curl -o /dev/null -s -w '%{time_total}' --max-time 30 "$lan_url" 2>/dev/null || echo "0")
+        if [ "$lan_bytes" != "0" ] && [ -n "$lan_time" ] && (( $(echo "$lan_time > 0.001" | bc -l 2>/dev/null || echo "0") )); then
+            lan_down=$(python3 -c "print(f'{float(${lan_bytes}) / 1024.0 / float(${lan_time}) / 1024.0:.1f}')" 2>/dev/null || echo "N/A")
+        fi
+    fi
+
+    # ── WAN 下载测速（Cloudflare CDN）──
+    local wan_down="N/A"
+    local wan_url="${WAN_SPEED_URL:-https://speed.cloudflare.com/__down?bytes=10485760}"
+    if command -v curl &>/dev/null; then
+        local wan_bytes
+        wan_bytes=$(curl -o /dev/null -s -w '%{size_download}' --max-time 120 "$wan_url" 2>/dev/null || echo "0")
+        local wan_time
+        wan_time=$(curl -o /dev/null -s -w '%{time_total}' --max-time 120 "$wan_url" 2>/dev/null || echo "0")
+        if [ "$wan_bytes" != "0" ] && [ -n "$wan_time" ] && (( $(echo "$wan_time > 0.001" | bc -l 2>/dev/null || echo "0") )); then
+            wan_down=$(python3 -c "print(f'{float(${wan_bytes}) / 1024.0 / float(${wan_time}) / 1024.0:.1f}')" 2>/dev/null || echo "N/A")
+        fi
+    fi
+
+    # ── 上传测速（到远程服务器）──
+    local upload="N/A"
+    local start_ts
+    start_ts=$(date -j +%s.%N 2>/dev/null || python3 -c "import time; print(f'{time.time():.6f}')" 2>/dev/null || date +%s)
+    if dd if=/dev/zero bs=1024 count=10240 2>/dev/null | \
+        ssh $ssh_opts "$SSH_HOST" "cat > /dev/null" >/dev/null 2>&1; then
+        local end_ts
+        end_ts=$(date -j +%s.%N 2>/dev/null || python3 -c "import time; print(f'{time.time():.6f}')" 2>/dev/null || date +%s)
+        local diff
+        diff=$(python3 -c "
+s = float('${start_ts}')
+e = float('${end_ts}')
+d = e - s
+if d > 0:
+    print(f'{10.0 / d:.1f}')
+else:
+    print('N/A')
+" 2>/dev/null) || diff="N/A"
+        upload="$diff"
+    fi
+
+    echo "lan_down=${lan_down:-N/A}|wan_down=${wan_down:-N/A}|upload=${upload:-N/A}"
+}
+
+# ═══════════════════════════════════════════════════════════════
 # 输出格式化
 # ═══════════════════════════════════════════════════════════════
 
@@ -449,6 +506,33 @@ print_ssh_result() {
         print_ok "10MB 传输: ${xfer} (~${speed} MB/s)"
     else
         print_err "传输测试失败"
+    fi
+}
+
+print_speed_result() {
+    local data="$1"
+    local lan_down=$(echo "$data" | cut -d'|' -f1 | cut -d'=' -f2)
+    local wan_down=$(echo "$data" | cut -d'|' -f2 | cut -d'=' -f2)
+    local upload=$(echo "$data" | cut -d'|' -f3 | cut -d'=' -f2)
+
+    print_section "网络测速"
+
+    if [ "$lan_down" != "N/A" ]; then
+        print_ok "LAN 下载: ${lan_down} MB/s"
+    else
+        print_warn "LAN 下载: 无法测试（路由器可能未提供 HTTP 服务）"
+    fi
+
+    if [ "$wan_down" != "N/A" ]; then
+        print_ok "WAN 下载: ${wan_down} MB/s"
+    else
+        print_err "WAN 下载: 测试失败"
+    fi
+
+    if [ "$upload" != "N/A" ]; then
+        print_ok "上传 (到 ${SSH_HOST}): ${upload} MB/s"
+    else
+        print_err "上传: 测试失败"
     fi
 }
 
@@ -646,6 +730,7 @@ save_results() {
     local modem_ping="$3"
     local server_ping="$4"
     local ssh_data="$5"
+    local speed_data="$6"
     
     local ts=$(timestamp)
     
@@ -668,6 +753,10 @@ save_results() {
     
     local ssh_first=$(echo "$ssh_data" | cut -d'|' -f1 | cut -d'=' -f2)
     local ssh_xfer=$(echo "$ssh_data" | cut -d'|' -f2 | cut -d'=' -f2)
+
+    local lan_down=$(echo "$speed_data" | cut -d'|' -f1 | cut -d'=' -f2)
+    local wan_down=$(echo "$speed_data" | cut -d'|' -f2 | cut -d'=' -f2)
+    local upload=$(echo "$speed_data" | cut -d'|' -f3 | cut -d'=' -f2)
     
     local json_entry=$(cat <<EOF
   {
@@ -690,6 +779,11 @@ save_results() {
     "ssh": {
       "first_connect": "$ssh_first",
       "xfer_10mb": "$ssh_xfer"
+    },
+    "speed": {
+      "lan_down_mbps": "$lan_down",
+      "wan_down_mbps": "$wan_down",
+      "upload_mbps": "$upload"
     }
   }
 EOF
@@ -733,6 +827,7 @@ show_comparison() {
     local current_modem="$3"
     local current_server="$4"
     local current_ssh="$5"
+    local current_speed="$6"
     
     if [ ! -f "$HISTORY_FILE" ]; then
         return
@@ -832,6 +927,23 @@ print(json.dumps(data[-2]))
     printf "%-12s %-12s %-12s %s\n" "到路由器延迟" "${prev_r_avg:-N/A}ms" "${cur_r_avg:-N/A}ms" "$r_avg_arrow"
     printf "%-12s %-12s %-12s %s\n" "到服务器丢包" "${prev_s_loss:-N/A}%" "${cur_s_loss:-N/A}%" "$s_loss_arrow"
     printf "%-12s %-12s %-12s %s\n" "到服务器延迟" "${prev_s_avg:-N/A}ms" "${cur_s_avg:-N/A}ms" "$s_avg_arrow"
+
+    printf "%s\n" "──────────────────────────────────────"
+
+    local cur_lan=$(echo "$current_speed" | cut -d'|' -f1 | cut -d'=' -f2)
+    local cur_wan=$(echo "$current_speed" | cut -d'|' -f2 | cut -d'=' -f2)
+    local cur_up=$(echo "$current_speed" | cut -d'|' -f3 | cut -d'=' -f2)
+
+    local prev_lan=$(echo "$prev_data" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('speed',{}).get('lan_down_mbps',''))" 2>/dev/null || echo "")
+    local prev_wan=$(echo "$prev_data" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('speed',{}).get('wan_down_mbps',''))" 2>/dev/null || echo "")
+    local prev_up=$(echo "$prev_data" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('speed',{}).get('upload_mbps',''))" 2>/dev/null || echo "")
+
+    local lan_arrow=$(trend_arrow "$prev_lan" "$cur_lan" 0)
+    local wan_arrow=$(trend_arrow "$prev_wan" "$cur_wan" 0)
+    local up_arrow=$(trend_arrow "$prev_up" "$cur_up" 0)
+    printf "%-12s %-12s %-12s %s\n" "LAN 下载" "${prev_lan:-N/A} MB/s" "${cur_lan:-N/A} MB/s" "$lan_arrow"
+    printf "%-12s %-12s %-12s %s\n" "WAN 下载" "${prev_wan:-N/A} MB/s" "${cur_wan:-N/A} MB/s" "$wan_arrow"
+    printf "%-12s %-12s %-12s %s\n" "上传" "${prev_up:-N/A} MB/s" "${cur_up:-N/A} MB/s" "$up_arrow"
 
     echo ""
 
@@ -946,6 +1058,10 @@ main() {
         echo "错误: 需要安装 bc"
         exit 1
     fi
+    if ! command -v curl &>/dev/null; then
+        echo "错误: 需要安装 curl（macOS 自带；Linux: sudo apt install curl）"
+        exit 1
+    fi
     
     mkdir -p "$DATA_DIR"
 
@@ -978,16 +1094,22 @@ main() {
     local ssh_result
     ssh_result=$(run_ssh_test)
     print_ssh_result "$ssh_result"
-    
-    # 4. 显示对比
-    show_comparison "$wifi_result" "$router_ping" "$modem_ping" "$server_ping" "$ssh_result"
-    
-    # 5. 生成建议
+
+    # 4. 网络测速
+    print_header "⚡ 网络测速"
+    local speed_result
+    speed_result=$(run_speed_test)
+    print_speed_result "$speed_result"
+
+    # 5. 显示对比
+    show_comparison "$wifi_result" "$router_ping" "$modem_ping" "$server_ping" "$ssh_result" "$speed_result"
+
+    # 6. 生成建议
     generate_advice "$wifi_result" "$router_ping" "$server_ping"
-    
-    # 6. 保存结果
+
+    # 7. 保存结果
     echo ""
-    save_results "$wifi_result" "$router_ping" "$modem_ping" "$server_ping" "$ssh_result"
+    save_results "$wifi_result" "$router_ping" "$modem_ping" "$server_ping" "$ssh_result" "$speed_result"
     
     echo ""
     print_header "测试完成"
