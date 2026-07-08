@@ -16,6 +16,64 @@ SSH_TARGET="${1:-192.168.1.10}"
 SSH_USER="${2:-xylon}"
 SSH_HOST="${SSH_USER}@${SSH_TARGET}"
 
+# ═══════════════════════════════════════════════════════════════
+# 网络拓扑自动检测
+# ═══════════════════════════════════════════════════════════════
+
+detect_gateway() {
+    # 从路由表提取默认网关 IP
+    local gw=""
+    case "$PLATFORM" in
+        macos)
+            gw=$(netstat -rn 2>/dev/null | awk '/^default/ {print $2}' | head -1 || true)
+            ;;
+        linux)
+            gw=$(ip route show default 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="via") print $(i+1)}' | head -1 || true)
+            ;;
+    esac
+    echo "${gw:-}"
+}
+
+detect_modem_ip() {
+    local gateway="$1"
+    # 将网关 IP 转为 /24 网段前缀
+    local prefix=""
+    case "$PLATFORM" in
+        macos)
+            prefix=$(echo "$gateway" | awk -F. '{print $1"."$2"."$3}')
+            ;;
+        linux)
+            prefix=$(echo "$gateway" | awk -F. '{print $1"."$2"."$3}')
+            ;;
+    esac
+
+    # 在网关所在网段探测常见 modem IP（.254, .1, .253）
+    local candidates=("${prefix}.254" "${prefix}.1" "${prefix}.253")
+    for candidate in "${candidates[@]}"; do
+        if ping -c 1 -t 2 "$candidate" >/dev/null 2>&1; then
+            # 确认与网关 MAC 不同（排除网关本身）
+            local gw_mac modem_mac
+            case "$PLATFORM" in
+                macos)
+                    gw_mac=$(arp -an 2>/dev/null | grep "($gateway)" | awk '{print $2}' | tr '[:upper:]' '[:lower:]')
+                    modem_mac=$(arp -an 2>/dev/null | grep "($candidate)" | awk '{print $2}' | tr '[:upper:]' '[:lower:]')
+                    ;;
+                linux)
+                    gw_mac=$(ip neigh show "$gateway" 2>/dev/null | awk '{print $5}')
+                    modem_mac=$(ip neigh show "$candidate" 2>/dev/null | awk '{print $5}')
+                    ;;
+            esac
+            if [ -n "$modem_mac" ] && [ "$gw_mac" != "$modem_mac" ]; then
+                echo "$candidate"
+                return
+            fi
+        fi
+    done
+
+    # 回退：返回空，由用户通过环境变量指定
+    echo ""
+}
+
 # 颜色定义
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -1065,9 +1123,32 @@ main() {
     
     mkdir -p "$DATA_DIR"
 
-    # 可配置的 ping 目标
-    ROUTER_IP="${ROUTER_IP:-192.168.0.1}"
-    MODEM_IP="${MODEM_IP:-192.168.1.1}"
+    # ── 自动检测网络拓扑 ──
+    local detected_gw=""
+    if [ -z "${ROUTER_IP:-}" ]; then
+        detected_gw=$(detect_gateway)
+        if [ -n "$detected_gw" ]; then
+            ROUTER_IP="$detected_gw"
+            print_info "自动检测到默认网关: ${ROUTER_IP}"
+        else
+            ROUTER_IP="192.168.1.1"  # 最终回退
+            print_warn "无法自动检测网关，使用默认值: ${ROUTER_IP}（可通过 ROUTER_IP 环境变量覆盖）"
+        fi
+    fi
+
+    if [ -z "${MODEM_IP:-}" ]; then
+        local detected_modem=""
+        detected_modem=$(detect_modem_ip "$ROUTER_IP")
+        if [ -n "$detected_modem" ]; then
+            MODEM_IP="$detected_modem"
+            print_info "自动检测到宽带猫: ${MODEM_IP}"
+        else
+            MODEM_IP="192.168.1.254"  # 最终回退
+            print_warn "无法自动检测宽带猫，使用默认值: ${MODEM_IP}（可通过 MODEM_IP 环境变量覆盖）"
+        fi
+    fi
+
+    print_info "网络拓扑: 笔记本 → 路由器(${ROUTER_IP}) → 宽带猫(${MODEM_IP}) → ISP"
 
     # 1. WiFi 检测
     print_header "📡 WiFi 状态"

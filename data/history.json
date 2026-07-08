@@ -251,5 +251,185 @@
       "wan_down_mbps": "0.4",
       "upload_mbps": "9.3"
     }
+  },
+  {
+    "timestamp": "2026-06-23 01:32:11",
+    "wifi": {
+      "phy": "802.11ac",
+      "channel": "44",
+      "band": "5GHz",
+      "bandwidth": "40MHz",
+      "signal_dbm": "-59",
+      "noise_dbm": "-96",
+      "tx_rate_mbps": "270",
+      "ip": "192.168.0.9"
+    },
+    "ping": {
+      "router": {
+        "loss_pct": "0.0",
+        "avg_ms": "31.613"
+      },
+      "modem": {
+        "loss_pct": "0.0",
+        "avg_ms": "11.726"
+      },
+      "server": {
+        "loss_pct": "0.0",
+        "avg_ms": "10.595"
+      }
+    },
+    "ssh": {
+      "first_connect": "0m0.513s",
+      "xfer_10mb": "0m1.357s"
+    },
+    "speed": {
+      "lan_down_mbps": "0.5",
+      "wan_down_mbps": "1.8",
+      "upload_mbps": "9.3"
+    }
+  },
+  {
+    "timestamp": "2026-06-26 09:29:27",
+    "wifi": {
+      "phy": "802.11ac",
+      "channel": "44",
+      "band": "5GHz",
+      "bandwidth": "40MHz",
+      "signal_dbm": "-39",
+      "noise_dbm": "-97",
+      "tx_rate_mbps": "400",
+      "ip": "192.168.0.16"
+    },
+    "ping": {
+      "router": {
+        "loss_pct": "3.3",
+        "avg_ms": "29.827"
+      },
+      "modem": {
+        "loss_pct": "3.3",
+        "avg_ms": "29.073"
+      },
+      "server": {
+        "loss_pct": "3.3",
+        "avg_ms": "31.169"
+      }
+    },
+    "ssh": {
+      "first_connect": "0m0.774s",
+      "xfer_10mb": "0m2.315s"
+    },
+    "speed": {
+      "lan_down_mbps": "0.1",
+      "wan_down_mbps": "1.3",
+      "upload_mbps": "4.2"
+    }
+  },
+  {
+    "timestamp": "2026-06-26 09:58:29",
+    "wifi": {
+      "phy": "802.11ac",
+      "channel": "44",
+      "band": "5GHz",
+      "bandwidth": "40MHz",
+      "signal_dbm": "-37",
+      "noise_dbm": "-97",
+      "tx_rate_mbps": "360",
+      "ip": "192.168.0.16"
+    },
+    "ping": {
+      "router": {
+        "loss_pct": "6.7",
+        "avg_ms": "28.282"
+      },
+      "modem": {
+        "loss_pct": "0.0",
+        "avg_ms": "35.003"
+      },
+      "server": {
+        "loss_pct": "100",
+        "avg_ms": "0"
+      }
+    },
+    "ssh": {
+      "first_connect": "",
+      "xfer_10mb": ""
+    },
+    "speed": {
+      "lan_down_mbps": "0.1",
+      "wan_down_mbps": "0.9",
+      "upload_mbps": "N/A"
+    }
+  },
+  {
+    "timestamp": "2026-07-08 13:14:40",
+    "wifi": {
+      "phy": "802.11ac",
+      "channel": "44",
+      "band": "5GHz",
+      "bandwidth": "80MHz",
+      "signal_dbm": "-58",
+      "noise_dbm": "-94",
+      "tx_rate_mbps": "585",
+      "ip": "192.168.1.27"
+    },
+    "ping": {
+      "router": {
+        "loss_pct": "100.0",
+        "avg_ms": "0"
+      },
+      "modem": {
+        "loss_pct": "0.0",
+        "avg_ms": "16.765"
+      },
+      "server": {
+        "loss_pct": "0.0",
+        "avg_ms": "13.331"
+      }
+    },
+    "ssh": {
+      "first_connect": "0m0.519s",
+      "xfer_10mb": "0m1.429s"
+    },
+    "speed": {
+      "lan_down_mbps": "0.0",
+      "wan_down_mbps": "0.9",
+      "upload_mbps": "7.8"
+    }
+  },
+  {
+    "timestamp": "2026-07-08 13:25:28",
+    "wifi": {
+      "phy": "802.11ac",
+      "channel": "44",
+      "band": "5GHz",
+      "bandwidth": "80MHz",
+      "signal_dbm": "-64",
+      "noise_dbm": "-94",
+      "tx_rate_mbps": "351",
+      "ip": "192.168.1.27"
+    },
+    "ping": {
+      "router": {
+        "loss_pct": "0.0",
+        "avg_ms": "18.830"
+      },
+      "modem": {
+        "loss_pct": "0.0",
+        "avg_ms": "15.044"
+      },
+      "server": {
+        "loss_pct": "0.0",
+        "avg_ms": "12.426"
+      }
+    },
+    "ssh": {
+      "first_connect": "0m0.520s",
+      "xfer_10mb": "0m1.300s"
+    },
+    "speed": {
+      "lan_down_mbps": "0.3",
+      "wan_down_mbps": "0.6",
+      "upload_mbps": "9.3"
+    }
   }
 ]
